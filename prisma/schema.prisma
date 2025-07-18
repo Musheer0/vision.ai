@@ -13,3 +13,101 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  clerk_id     String        @unique
+  image        String?
+  visons       Vision[]
+  fragments    Fragment[]
+  media        Media[]
+  usage        Usage?
+  Subscription Subscription?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Vision {
+  id        String     @id @default(uuid())
+  name      String
+  user_id   String
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  fragments Fragment[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+enum Type {
+  USER
+  AI
+  ERROR
+}
+
+model Fragment {
+  id               String   @id @default(uuid())
+  name             String
+  user_id          String
+  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  vision_id        String
+  vision           Vision   @relation(fields: [vision_id], references: [id], onDelete: Cascade)
+  media            Media[]
+  files            Json
+  agent_summary    String?
+  user_summary     String?
+  sandBoxUrl       String?
+  sandBoxCreatedAt DateTime @default(now())
+  isCompleted      Boolean  @default(true)
+  type             Type     @default(USER)
+  error            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Media {
+  id          String   @id @default(uuid())
+  name        String
+  user_id     String
+  fragment_id String
+  fragement   Fragment @relation(fields: [fragment_id], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  url         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum SubscriptionType {
+  FREE
+  PRO
+  MAX
+}
+
+//Fix subsctiption model 
+model Subscription {
+  id                    String           @id @default(uuid())
+  name                  String
+  user_id               String           @unique
+  user                  User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  type                  SubscriptionType @default(FREE)
+  subscription_clerk_id String           @unique
+  usage                 Usage?
+  subscribedAt          DateTime         @default(now())
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+}
+
+model Usage {
+  id            String       @id @default(uuid())
+  token_left    Int          @default(5)
+  image_left    Int          @default(1)
+  website_left  Int          @default(1)
+  sandBox_left  Int          @default(50)
+  projects_left Int          @default(10)
+  user_id       String       @unique
+  plan_id       String       @unique
+  plan          Subscription @relation(references: [id], fields: [plan_id], onDelete: Cascade)
+  user          User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
