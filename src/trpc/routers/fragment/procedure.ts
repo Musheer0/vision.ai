@@ -57,6 +57,7 @@ export const FragmentRouter = createTRPCRouter({
             fragments: [user_msg,ai_msg]
         }
        } catch (error) {
+        console.log(error);
          await RevertCredits(user.id);
        }
     }),
