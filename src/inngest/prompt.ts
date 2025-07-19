@@ -130,10 +130,14 @@ NEVER LEAVE THE SUMMARY BLANK
 <task_summary>
  the task summary should be in this json format 
  {
-ai:string,
-user:string
+"ai":string,
+"user":string
  }
-
+-eg:
+  {
+"ai":"ergerg",
+"user":"wef4f34g"
+}
  -ai:
  START WITH FILE STRUCTURE include all file paths and its use
 example :

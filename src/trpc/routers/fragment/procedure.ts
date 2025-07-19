@@ -4,6 +4,7 @@ import prisma from "@/db";
 import { Type } from "@prisma/client";
 import { GetUser } from "@/actions/get-user";
 import { consumeCredits, RevertCredits } from "@/usage/usage-tracker";
+import { getFragmentStatus } from "@/redis/redis-client";
 
 export const FragmentRouter = createTRPCRouter({
     create :baseProcedure
@@ -78,4 +79,20 @@ export const FragmentRouter = createTRPCRouter({
 
       return fragments;
     }),
+    pollStatus:baseProcedure
+    .input(
+      z.object({
+        id:z.string()
+      })
+    )
+    .query(async({input})=>{
+      const cache = await getFragmentStatus(input.id);
+      if(cache) return cache;
+      const fragment = await prisma.fragment.findFirst({
+        where:{
+          id:input.id
+        }
+      });
+      return fragment;
+    })
 })
