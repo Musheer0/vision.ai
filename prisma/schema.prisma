@@ -22,9 +22,10 @@ model User {
   fragments    Fragment[]
   media        Media[]
   usage        Usage?
-  Subscription Subscription?
+  // Subscription Subscription?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  @@index([clerk_id])
 }
 
 model Vision {
@@ -82,29 +83,27 @@ enum SubscriptionType {
 }
 
 //Fix subsctiption model 
-model Subscription {
-  id                    String           @id @default(uuid())
-  name                  String
-  user_id               String           @unique
-  user                  User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  type                  SubscriptionType @default(FREE)
-  subscription_clerk_id String           @unique
-  usage                 Usage?
-  subscribedAt          DateTime         @default(now())
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-}
+// model Subscription {
+//   id                    String           @id @default(uuid())
+//   name                  String
+//   user_id               String           @unique
+//   user                  User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+//   type                  SubscriptionType @default(FREE)
+//   subscription_clerk_id String           @unique
+//   usage                 Usage?
+//   subscribedAt          DateTime         @default(now())
+//   createdAt             DateTime         @default(now())
+//   updatedAt             DateTime         @updatedAt
+// }
 
 model Usage {
   id            String       @id @default(uuid())
-  token_left    Int          @default(5)
+  token_left    Int          @default(10)
   image_left    Int          @default(1)
   website_left  Int          @default(1)
   sandBox_left  Int          @default(50)
   projects_left Int          @default(10)
   user_id       String       @unique
-  plan_id       String       @unique
-  plan          Subscription @relation(references: [id], fields: [plan_id], onDelete: Cascade)
   user          User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
