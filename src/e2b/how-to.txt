@@ -1,0 +1,2 @@
+e2b template build --name <name> --cmd "/compile_page.sh"
+e2b templaye publish -t <team id>
