@@ -1,5 +1,4 @@
 import prisma from "@/db";
-import { auth } from "@clerk/nextjs/server"
 
 export const  consumeCredits = async (userId:string)=>{
 
