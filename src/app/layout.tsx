@@ -21,7 +21,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${font.className} antialiased`}>
+        <body className={`${font.className} w-full h-screen overflow-hidden antialiased`}>
           <Toaster/>
           {children}
         </body>

@@ -5,13 +5,13 @@ import { Type } from "@prisma/client";
 import { GetUser } from "@/actions/get-user";
 import { consumeCredits, RevertCredits } from "@/usage/usage-tracker";
 import { getFragmentStatus } from "@/redis/redis-client";
+import { inngest } from "@/inngest/client";
 
 export const FragmentRouter = createTRPCRouter({
     create :baseProcedure
     .input(
         z.object({
             prompt:z.string(),
-            last_ai_id:z.string(),
             vision_id:z.string(),
         })
     )
@@ -22,13 +22,13 @@ export const FragmentRouter = createTRPCRouter({
        try {
          const last_ai_message = await prisma.fragment.findFirst({
             where:{
-                id:input.last_ai_id,
                 vision_id:input.vision_id,
                 isCompleted:true,
                 type:Type.AI,
                 agent_summary: {not:null}
             }
         });
+        await consumeCredits(user.id);
         const [user_msg ,ai_msg]=await  prisma.$transaction([
               prisma.fragment.create({
                             data: {
@@ -49,11 +49,18 @@ export const FragmentRouter = createTRPCRouter({
                             },
                           }),
         ]);
-        //TODO SEND INGEST
         const memory ={
             summary: last_ai_message?.agent_summary,
             files : last_ai_message?.files
-        }
+        };
+        await inngest.send({
+           name: "ai/code-agent",
+      data: {
+        prompt: input.prompt,
+        memory: memory,
+        fragment:ai_msg,
+      },
+        })
         return {
             fragments: [user_msg,ai_msg]
         }

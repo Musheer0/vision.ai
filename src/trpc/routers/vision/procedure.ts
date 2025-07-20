@@ -40,67 +40,80 @@ export const VisionRouter = createTRPCRouter({
         prompt: z.string().min(1, "Prompt cannot be empty"),
       })
     )
-    .mutation(async ({ input }) => {
-      try {
-        const user = await GetUser();
+   .mutation(async ({ input }) => {
+  let user;
 
-       
-          try {
-            const title = await GenerateTitle(input.prompt);
-            const vision = await prisma.vision.create({
-              data: {
-                name: title,
-                user_id: user.id,
-              },
-            });
+  try {
+    user = await GetUser(); // only auth logic here
+  } catch (authError) {
+    console.error("Auth error:", authError);
+    throw new Error("Unauthorized");
+  }
 
-            const [user_fragment, ai_fragment] = await prisma.$transaction([
-              prisma.fragment.create({
-                data: {
-                  user_id: user.id,
-                  vision_id: vision.id,
-                  name: input.prompt,
-                  files: {},
-                  type: Type.USER,
-                },
-              }),
-              prisma.fragment.create({
-                data: {
-                  user_id: user.id,
-                  vision_id: vision.id,
-                  name: input.prompt,
-                  files: {},
-                  type: Type.AI,
-                },
-              }),
-            ]);
-            await inngest.send({
-              name:'ai/code-agent',
-              data:{
-                prompt:input.prompt,
-                memory:null,
-                fragment:ai_fragment
-              }
-            })
-            return {
-              vision,
-              fragments: [user_fragment, ai_fragment],
-            };
-          } catch (apiError) {
-            console.error("Vision creation error:", apiError);
-            try {
-              await RevertCredits(user.id);
-            } catch (revertError) {
-              console.error("Failed to revert credits:", revertError);
-            }
-            throw new Error("Error creating vision");
-          }
-      } catch (authError) {
-        console.error("Auth error:", authError);
-        throw new Error("Unauthorized");
-      }
-    }),
+  let usage;
+  try {
+    usage = await consumeCredits(user.id);
+    if (usage.token_left < 0) throw new Error("Token exhausted");
+  } catch (creditsError) {
+    console.error("Credit system error:", creditsError);
+    throw new Error("Token exhausted");
+  }
 
+  try {
+    const title = await GenerateTitle(input.prompt);
+    const vision = await prisma.vision.create({
+      data: {
+        name: title,
+        user_id: user.id,
+      },
+    });
+
+    const [user_fragment, ai_fragment] = await prisma.$transaction([
+      prisma.fragment.create({
+        data: {
+          user_id: user.id,
+          vision_id: vision.id,
+          name: input.prompt,
+          files: {},
+          type: Type.USER,
+        },
+      }),
+      prisma.fragment.create({
+        data: {
+          user_id: user.id,
+          vision_id: vision.id,
+          name: input.prompt,
+          files: {},
+          type: Type.AI,
+        },
+      }),
+    ]);
+
+    await inngest.send({
+      name: "ai/code-agent",
+      data: {
+        prompt: input.prompt,
+        memory: null,
+        fragment: ai_fragment,
+      },
+    });
+
+    return {
+      vision,
+      fragments: [user_fragment, ai_fragment],
+      warning:
+        usage.token_left === 0 ? "warning: you have 0 tokens left" : null,
+    };
+  } catch (apiError) {
+    console.error("Vision creation error:", apiError);
+    try {
+      await RevertCredits(user.id);
+    } catch (revertError) {
+      console.error("Failed to revert credits:", revertError);
+    }
+    throw new Error("Error creating vision");
+  }
+}),
   /**
    * Deletes a vision by ID.
    * 

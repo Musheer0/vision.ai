@@ -143,23 +143,19 @@ export const CodeAgent = inngest.createFunction(
       lifecycle: {
         onResponse: async ({ result, network }) => {
             const lastMsg = result.output[
-                result.output.findIndex((msg) => msg.role === 'assistant')
-                // @ts-ignore
-          ]?.content;
-
-          if (lastMsg && network) {
-            let msg = '';
-            if (typeof lastMsg === 'string') {
-              msg = lastMsg;
-            } else {
-              msg = lastMsg.map((c: { text: string }) => c.text).join('');
-            }
-
-            if (msg.includes('<task_summary>')) {
-              network.state.data.summary = msg;
-            }
+                result.output.findLastIndex((msg) => msg.role === 'assistant')
+              ]
+              console.log(lastMsg?.type==='text');
+              if(lastMsg?.type!=='text' ) return result
+          const msg = lastMsg?.content
+          ?typeof lastMsg?.content==='string'
+          ? lastMsg.content as string
+          : lastMsg.content.map((c:{text:string})=>c.text).join("") as string
+          : undefined;
+          if(msg && network){
+            if(msg.includes("<task_summary>"))
+              network.state.data.summary = msg
           }
-
           return result;
         },
       },
@@ -179,12 +175,6 @@ export const CodeAgent = inngest.createFunction(
  
     try {
          // Load memory files
-     
-          const usage = await step.run("cosume-creadtis", async()=>{
-            return await consumeCredits(fragment.user_id);
-          })
-          if (usage.token_left < 0) throw new Error("Token exhausted");
-
        const result = await network.run(event.data.prompt);
     const isError =
       !result.state.data.files ||
@@ -195,7 +185,45 @@ export const CodeAgent = inngest.createFunction(
       throw new Error("agent error")
     }
       const summary = result.state.data?.summary as string;
-      const data: { user: string; ai: string } =  JSON.parse( summary.split('```json')[1].split('```')[0]);
+      console.log(summary,'finaly\n------------------------------------------------------------------')
+   const data: { user: string; ai: string } = (() => {
+ try {
+    // Try markdown-style code block with json
+    const jsonString = summary.split('```json')[1].split('```')[0];
+    return JSON.parse(jsonString);
+  } catch (error1) {
+    console.log('Fallback 1: no ```json block');
+    try {
+      // Try XML-style <task_summary> wrapped JSON
+      const xmlWrapped = t.replace('<task_summary>', '').replace('</task_summary>', '');
+      return JSON.parse(xmlWrapped);
+    } catch (error2) {
+      console.log('Fallback 2: no plain <task_summary>');
+      try {
+        // Try if it's wrapped in backticks with tags, like ```<task_summary>{...}</task_summary>```
+        const codeBlock = summary.split('```')[1]; // no json, just triple backticks
+        const inner = codeBlock.replace('<task_summary>', '').replace('</task_summary>', '');
+        console.log(inner,codeBlock,'innnnnnnnnnnnnnnnn')
+        return JSON.parse(inner);
+      } catch (finalErr) {
+        console.error('back tick parsing failed ', finalErr);
+        try {
+          const match = summary.match(/<task_summary>\s*([\s\S]*?)\s*<\/task_summary>/); 
+          if(match){
+            const m = match[0].replace('<task_summary>','').replace('</task_summary>','')
+            console.log(m,'fiiii')
+          return JSON.parse(match[0].replace('<task_summary>','').replace('</task_summary>',''))}
+          return { user: '', ai: '' }; // Final fallback so app doesn't explode
+        } catch (error) {
+                  console.error('all failed 🧨', error);
+
+          return { user: '', ai: '' }; // Final fallback so app doesn't explode
+        }
+      }
+    }
+  }
+})();
+
            const sandbox = await GetSandBox(sandBoxId);
          sandbox.setTimeout(3600000)
       await prisma.fragment.update({
@@ -212,7 +240,7 @@ export const CodeAgent = inngest.createFunction(
         },
       });
       await deleteFragmentStatus(fragment.id);
-      return { summary: result.state.data?.summary, id: sandBoxId ,url:`https://${sandbox.getHost(3000)}`};
+      return { summary:data, id: sandBoxId ,url:`https://${sandbox.getHost(3000)}`};
     } catch (error) {
       await prisma.fragment.update({
         where: { id: fragment.id },
