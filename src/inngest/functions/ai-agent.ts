@@ -12,9 +12,10 @@ import {
   setFragmentStatusCache,
 } from '@/redis/redis-client';
 import prisma from '@/db';
+import { consumeCredits, RevertCredits } from '@/usage/usage-tracker';
 
 export const CodeAgent = inngest.createFunction(
-  { name: 'code-agent', id: 'code-agent' },
+  {  id: 'ai/code-agent' },
   { event: 'ai/code-agent' },
   async ({ event, step }) => {
     const { memory } = event.data;
@@ -38,6 +39,13 @@ export const CodeAgent = inngest.createFunction(
           description:
             'Use this tool to get memory or context or files of previous convos',
           handler: async ({}, { network }) => {
+                const sandbox = await GetSandBox(sandBoxId);
+          if (memory?.files) {
+          const keys = Object.keys(memory.files);
+      for (const key of keys) {
+        await sandbox.files.write(key, memory.files[key]);
+      }
+    }
             if (memory?.files) network.state.data.files = memory.files;
             return memory;
           },
@@ -168,42 +176,28 @@ export const CodeAgent = inngest.createFunction(
       },
     });
 
-    // Load memory files
-    if (memory?.files) {
-      const sandbox = await GetSandBox(sandBoxId);
-      const keys = Object.keys(memory.files);
-      for (const key of keys) {
-        await sandbox.files.write(key, memory.files[key]);
-      }
-    }
+ 
+    try {
+         // Load memory files
+     
+          const usage = await step.run("cosume-creadtis", async()=>{
+            return await consumeCredits(fragment.user_id);
+          })
+          if (usage.token_left < 0) throw new Error("Token exhausted");
 
-    const result = await network.run(event.data.prompt);
+       const result = await network.run(event.data.prompt);
     const isError =
       !result.state.data.files ||
       Object.keys(result.state.data.files || {}).length === 0;
 
     if (isError) {
-      await prisma.fragment.update({
-        where: { id: fragment.id },
-        data: {
-          isCompleted: true,
-          error: 'Error creating your vision',
-          type: Type.ERROR,
-          status: 'failed',
-        },
-      });
-      await deleteFragmentStatus(fragment.id);
-      return { error: 'error creating response' };
+      console.log(result.state.data);
+      throw new Error("agent error")
     }
-
-    try {
       const summary = result.state.data?.summary as string;
-      const data: { user: string; ai: string } = JSON.parse(
-        summary.split('<task_summary>')[1].split('</task_summary>')[0],
-      );
-
-      const sandbox = await GetSandBox(sandBoxId);
-
+      const data: { user: string; ai: string } =  JSON.parse( summary.split('```json')[1].split('```')[0]);
+           const sandbox = await GetSandBox(sandBoxId);
+         sandbox.setTimeout(3600000)
       await prisma.fragment.update({
         where: { id: fragment.id },
         data: {
@@ -214,10 +208,11 @@ export const CodeAgent = inngest.createFunction(
           files: result.state.data.files,
           sandBoxUrl: `https://${sandbox.getHost(3000)}`,
           sandBoxCreatedAt: new Date(),
+          type:Type.AI
         },
       });
-
       await deleteFragmentStatus(fragment.id);
+      return { summary: result.state.data?.summary, id: sandBoxId ,url:`https://${sandbox.getHost(3000)}`};
     } catch (error) {
       await prisma.fragment.update({
         where: { id: fragment.id },
@@ -229,9 +224,10 @@ export const CodeAgent = inngest.createFunction(
         },
       });
       await deleteFragmentStatus(fragment.id);
-      return { error: 'error creating response' };
+      await RevertCredits(fragment.user_id);
+      console.log(error)
+      return { error};
     }
 
-    return { summary: result.state.data?.summary, id: sandBoxId };
   },
 );

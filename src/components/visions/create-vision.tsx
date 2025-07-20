@@ -13,7 +13,6 @@ const CreateVision = () => {
     const { mutate, isError ,isPending} =useMutation({
         mutationFn:async()=>await trpc.vision.create.mutate({prompt}),
         onSuccess:(data)=>{
-            if(data?.warning)toast.warning(data.warning)
             query_client.setQueryData([data.vision.id],{...data.vision, fragments:data.fragments})
         }
     });
@@ -26,6 +25,7 @@ const CreateVision = () => {
       minRows={3}
       maxRows={10}
       disabled={isPending}
+      placeholder='What do you want to build'
       />
       <Button size={'icon'} onClick={()=>mutate()} disabled={isPending}>
         {isPending ? <Loader2 className='animate-spin'/>:<ArrowUp/>}

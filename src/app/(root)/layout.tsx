@@ -1,10 +1,12 @@
+import ReactQueryProvider from '@/components/providers/react-query-provider'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { TRPCProvider } from '@/trpc/client'
 import React from 'react'
 
 const layout = ({children}:{children:React.ReactNode}) => {
   return (
-    <TRPCProvider>
+   <ReactQueryProvider>
+     <TRPCProvider>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"
@@ -16,6 +18,7 @@ const layout = ({children}:{children:React.ReactNode}) => {
         </main>
         </ThemeProvider>
     </TRPCProvider>
+   </ReactQueryProvider>
   )
 }
 

@@ -1,9 +1,2 @@
-let t = `
-<task_summary>
-{
-"ai":"ergerg",
-"user":"wef4f34g"
-}
-</task_summary>
-`
-console.log(JSON.parse(t.split('<task_summary>')[1].split('</task_summary>')[0]))
+let t = "<task_summary>\n```json\n{\n  \"ai\": \"File Structure:\\n- `app/page.tsx`: This is the main entry point for the landing page. It imports and renders the `Navbar`, `HeroSection`, `CategoriesSection`, and `Footer` components.\\n- `components/HeroSection.tsx`: This component displays a hero section with a title, description, and a \\\"Shop Now\\\" button. It uses `framer-motion` for a fade-in animation.\\n- `components/CategoryCard.tsx`: This component displays a category card with an image and title. It uses `framer-motion` for a hover effect.\\n- `components/CategoriesSection.tsx`: This component displays a section with category cards. It maps over an array of categories and renders a `CategoryCard` for each.\\n- `components/Footer.tsx`: This component displays a footer with a copyright notice and a \\\"Contact Us\\\" button.\\n- `components/Navbar.tsx`: This component displays a navigation bar with a logo, mode toggle, and shopping cart icon.\\n\\nEach component is styled using Tailwind CSS classes, and `framer-motion` is used for animations and hover effects. Shadcn UI components are used for the button and mode toggle.\",\n  \"user\": \"The landing page has a navigation bar, a hero section, a categories section, and a footer. The hero section has a title, description, and a shop now button. The categories section displays different categories of clothing with images. The footer has a copyright notice and a contact us button. The page also includes a mode toggle and shopping cart icon in the navigation bar.\"\n}\n```\n</task_summary>\n"
+console.log(JSON.parse(t.split('```json')[1].split('```')[0]))

@@ -5,6 +5,7 @@ import { consumeCredits, RevertCredits } from "@/usage/usage-tracker";
 import prisma from "@/db";
 import { GenerateTitle } from "@/actions/generate-title";
 import { Type } from "@prisma/client";
+import { inngest } from "@/inngest/client";
 /**
  * VisionRouter - Handles CRUD operations for visions.
  *
@@ -43,10 +44,7 @@ export const VisionRouter = createTRPCRouter({
       try {
         const user = await GetUser();
 
-        try {
-          const usage = await consumeCredits(user.id);
-          if (usage.token_left < 0) throw new Error("Token exhausted");
-
+       
           try {
             const title = await GenerateTitle(input.prompt);
             const vision = await prisma.vision.create({
@@ -76,14 +74,17 @@ export const VisionRouter = createTRPCRouter({
                 },
               }),
             ]);
-
+            await inngest.send({
+              name:'ai/code-agent',
+              data:{
+                prompt:input.prompt,
+                memory:null,
+                fragment:ai_fragment
+              }
+            })
             return {
               vision,
               fragments: [user_fragment, ai_fragment],
-              warning:
-                usage.token_left === 0
-                  ? "warning: you have 0 tokens left"
-                  : null,
             };
           } catch (apiError) {
             console.error("Vision creation error:", apiError);
@@ -94,10 +95,6 @@ export const VisionRouter = createTRPCRouter({
             }
             throw new Error("Error creating vision");
           }
-        } catch (creditsError) {
-          console.error("Credit system error:", creditsError);
-          throw new Error("Token exhausted");
-        }
       } catch (authError) {
         console.error("Auth error:", authError);
         throw new Error("Unauthorized");

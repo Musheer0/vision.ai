@@ -10,12 +10,12 @@ export async function POST(req: NextRequest) {
     try {
         if(!id || eventType!=='user.created') return NextResponse.json({error:'clerk id not found'},{status:500})
             const {data} = evt;
-        
      await prisma.user.create({
             data:{
                 clerk_id: id,
                 email: data.email_addresses.map((e)=>e.email_address),
-                name:`${data.first_name} ${data.last_name}`
+                name:`${data.first_name} ${data.last_name}`,
+                usage:{create:{}}
             }
         });
     } catch (error) {
