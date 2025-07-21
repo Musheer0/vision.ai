@@ -7,10 +7,12 @@ export const redis = new Redis({
 });
 
 export const setFragmentStatusCache = async (id: string, status: string) => {
+  console.log(id,status,'setttedddddddddddddddddddddddddddddddd')
   return redis.set(`status:${id}:poll`, status);
 };
 
 export const getFragmentStatus = async (id: string) => {
+  console.log(id)
   return redis.get<string>(`status:${id}:poll`);
 };
 

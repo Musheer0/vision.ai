@@ -6,6 +6,7 @@ import prisma from "@/db";
 import { GenerateTitle } from "@/actions/generate-title";
 import { Type } from "@prisma/client";
 import { inngest } from "@/inngest/client";
+import { setFragmentStatusCache } from "@/redis/redis-client";
 /**
  * VisionRouter - Handles CRUD operations for visions.
  *
@@ -85,10 +86,11 @@ export const VisionRouter = createTRPCRouter({
           name: input.prompt,
           files: {},
           type: Type.AI,
+          isCompleted:false
         },
       }),
     ]);
-
+await setFragmentStatusCache(ai_fragment.id, 'processing your request...')
     await inngest.send({
       name: "ai/code-agent",
       data: {

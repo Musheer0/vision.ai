@@ -4,7 +4,7 @@ import prisma from "@/db";
 import { Type } from "@prisma/client";
 import { GetUser } from "@/actions/get-user";
 import { consumeCredits, RevertCredits } from "@/usage/usage-tracker";
-import { getFragmentStatus } from "@/redis/redis-client";
+import { getFragmentStatus, setFragmentStatusCache } from "@/redis/redis-client";
 import { inngest } from "@/inngest/client";
 
 export const FragmentRouter = createTRPCRouter({
@@ -46,6 +46,7 @@ export const FragmentRouter = createTRPCRouter({
                               name: input.prompt,
                               files: {},
                               type: Type.AI,
+                              isCompleted:false
                             },
                           }),
         ]);
@@ -53,6 +54,7 @@ export const FragmentRouter = createTRPCRouter({
             summary: last_ai_message?.agent_summary,
             files : last_ai_message?.files
         };
+        await setFragmentStatusCache(ai_msg.id, 'processing your request...')
         await inngest.send({
            name: "ai/code-agent",
       data: {
@@ -94,6 +96,7 @@ export const FragmentRouter = createTRPCRouter({
     )
     .query(async({input})=>{
       const cache = await getFragmentStatus(input.id);
+      console.log(cache,'-------------------------------------')
       if(cache) return cache;
       const fragment = await prisma.fragment.findFirst({
         where:{

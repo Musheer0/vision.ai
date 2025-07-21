@@ -29,10 +29,10 @@ const CreateVision = () => {
           localStorage.removeItem("prompt");
             query_client.setQueryData([data.vision.id],{...data.vision});
             query_client.setQueryData([`fragment-${data.vision.id}`],[...data.fragments]);
-            const frag = data.fragments.find((f)=>f.type==='AI');
+            const frag = data.fragments.find((f)=>f.type==='AI' && !f.isCompleted);
             if(frag) setFragment(frag);
             if(data.warning) toast.warning(data.warning);
-            router.push('/visons/'+data.vision.id);
+            router.push('/vision/'+data.vision.id);
         },
         onError:(data)=>{
           setError(data.message);

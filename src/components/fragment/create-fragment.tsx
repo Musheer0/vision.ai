@@ -2,23 +2,24 @@
 "use client"
 
 import { useTrpc } from '@/trpc/client';
-import { Fragment, Usage, Vision } from '@prisma/client';
+import { Fragment, Usage } from '@prisma/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Button } from '../ui/button';
-import { ArrowUp, ImagePlusIcon, Loader2Icon, MenuIcon } from 'lucide-react';
+import { ArrowUp, ImagePlusIcon, Loader2Icon, MenuIcon, ShieldAlertIcon } from 'lucide-react';
 import TokenUsage from '../shared/token-usage';
+import { Badge } from '../ui/badge';
+import { useActiveFragmentStore } from '@/stores/active-fragment-store';
 
 const CreateFragment = ({id}:{id:string}) => {
   const query_client = useQueryClient();
-  const vision = query_client.getQueryData<Vision>([id]);
-  
+  const {fragment} = useActiveFragmentStore()
   const fragments = query_client.getQueryData<Fragment[]>([`fragment-${id}`]);
-const data:any = query_client.getQueryData(['credits-usage']);
+const data = query_client.getQueryData<Usage|undefined>(['credits-usage']);
   const [prompt ,setPrompt] = useState('');
-  
+  const {setFragment} = useActiveFragmentStore()
   const [error ,setError] = useState('')
   useEffect(()=>{
     if(!prompt) {
@@ -35,17 +36,22 @@ const data:any = query_client.getQueryData(['credits-usage']);
     mutationFn: async()=>await trpc.fragment.create.mutate({prompt,vision_id:id}),
     onSuccess:(data)=>{
         if(data?.fragments){
+          localStorage.removeItem(`fragment-${id}`);
+          setPrompt('');
          toast.success("request sent!");
          query_client.setQueryData([`fragment-${id}`],(old:Fragment[]|undefined)=>{
         if(!old) return data?.fragments;
         return [...old,...data?.fragments]
-     })
+     });
+      const frag = data.fragments.find((f)=>f.type==='AI' && !f.isCompleted);
+      if(frag){setFragment(frag);}
      }
     },
     onError:(data)=>{
         setError(data.message)
     },
      onMutate:()=>{
+       if (!data || data.token_left <= 0) return;
               if(data){
                 query_client.setQueryData(['credits-usage'], (oldData:Usage|undefined)=>{
                   if(oldData) return {...oldData,token_left:oldData.token_left-1};
@@ -54,10 +60,12 @@ const data:any = query_client.getQueryData(['credits-usage']);
               }
             }
   });
-// if(data && fragments)
   return (
-    <div className='bg-background border p-4 rounded-3xl shadow-2xl/10'>
+    <div className='bg-background border p-4 w-full mx-auto max-w-5xl sticky bottom-2 rounded-3xl shadow-2xl/10'>
         <TokenUsage/>
+         {isError && <>
+               <Badge variant={'destructive'} className=''><ShieldAlertIcon/>{error}</Badge>
+                </>}
         <TextareaAutosize
         value={prompt}
         onChange={HandleChange}
@@ -84,7 +92,8 @@ const data:any = query_client.getQueryData(['credits-usage']);
         </Button> 
         <Button
         onClick={()=>mutate()}
-        size={'free'} className='p-1.5 cursor-pointer rounded-full' disabled={isPending||prompt.length<2 || data?.token_left==0}>
+        size={'free'} className='p-1.5 cursor-pointer rounded-full'
+         disabled={isPending||prompt.length<2 || data?.token_left==0|| fragment?.vision_id===id && !fragment.isCompleted}>
             {isPending ?
             <Loader2Icon className='animate-spin'/>
             :

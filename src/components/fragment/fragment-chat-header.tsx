@@ -7,15 +7,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const FragmentChatHeader = ({title}:{title:string}) => {
   return (
    <DropdownMenu>
-    <DropdownMenuTrigger>
-         <div className='flex hover:bg-muted-foreground/10 py-2 px-3 cursor-pointer rounded-xl items-center gap-2'>
+    <DropdownMenuTrigger className='max-w-5xl sticky top-0 mx-auto  w-full bg-background'>
+         <div className='flex hover:bg-muted-foreground/10  py-2  px-3 cursor-pointer rounded-xl items-center gap-2'>
           <Image
                     src={'/logo-black.png'}
                     width={30}
                     height={30}
                     alt='logo'
                     />
-        < p className='text-sm line-clamp-1 text-ellipsis font-bold'>{title}</p>
+        < p className='text-sm line-clamp-1 text-ellipsis font-bold'>Vision Ai/<span className='text-muted-foreground'>{title}</span></p>
     </div>
     </DropdownMenuTrigger>
     <DropdownMenuContent side='bottom' >

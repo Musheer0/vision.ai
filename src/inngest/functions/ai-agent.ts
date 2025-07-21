@@ -132,6 +132,7 @@ export const CodeAgent = inngest.createFunction(
           handler: async ({ status }) => {
             try {
               await setFragmentStatusCache(fragment.id, status);
+              console.log(status,'---------------')
               return status;
             } catch (error) {
               console.log(error);
