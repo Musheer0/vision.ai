@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import React, { useEffect } from 'react'
 import FragmentBody from './fragment-body'
 import { useActiveFragmentStore } from '@/stores/active-fragment-store'
+import { Loader2 } from 'lucide-react'
 
 const FragmentChat = ({id}:{id:string}) => {
     const trpc = useTrpc()
@@ -20,11 +21,13 @@ const FragmentChat = ({id}:{id:string}) => {
     },[data])
 if(isPending)
   return (
-    <div>Loading</div>
+    <div className='flex w-full flex-1 justify-center items-center'>
+        <Loader2 className='animate-spin'/>
+    </div>
   )
 if(data){
     return(
-        <div className='flex max-w-5xl w-full flex-1 mx-auto flex-col gap-2'>
+        <div className='flex max-w-5xl overflow-y-auto px-[10px]   pt-2 w-full flex-1 mx-auto flex-col gap-2'>
             {data.map((f,i)=><FragmentBody fragment={f} key={i}/>)}
         </div>
     )

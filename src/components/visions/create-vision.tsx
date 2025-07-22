@@ -39,7 +39,7 @@ const CreateVision = () => {
           toast.error(data.message);
            if(data){
             query_client.setQueryData(['credits-usage'], (oldData:Usage|undefined)=>{
-              if(oldData) return {...oldData,token_left:oldData.token_left+1};
+              if(oldData) return {...oldData,token_left:oldData.token_left+2};
               return oldData
             })
           }
@@ -47,7 +47,7 @@ const CreateVision = () => {
         onMutate:()=>{
           if(data){
             query_client.setQueryData(['credits-usage'], (oldData:Usage|undefined)=>{
-              if(oldData) return {...oldData,token_left:oldData.token_left-1};
+              if(oldData) return {...oldData,token_left:oldData.token_left-3};
               return oldData
             })
           }

@@ -5,9 +5,11 @@ import { Button } from '../ui/button'
 import { SquareArrowOutUpRightIcon } from 'lucide-react'
 import { TextShimmer } from '../motion-primitives/text-shimmer'
 import { formatPrettyDate } from '@/lib/utils'
+import { useSandboxStore } from '@/stores/sandbox-store'
 
 const FragmentBody = ({fragment}:{fragment:Fragment}) => {
-    const {type,isCompleted,user_summary,name:msg,error,sandBoxUrl,status, updatedAt} =fragment;
+    const {sandbox, setSandbox}= useSandboxStore()
+    const {type,isCompleted,user_summary,name:msg,error,sandBoxUrl,status, updatedAt,files} =fragment;
 if(type==='USER')
   return (
     <div className='px-3 max-w-[80%] rounded-xl py-2 bg-muted-foreground/10 w-fit  ml-auto'>
@@ -59,8 +61,16 @@ if(type==='AI' )
         </div>
        {isCompleted && sandBoxUrl && 
         <div className="preview py-2">
-            <Button className='cursor-pointer'>
-                Preview <SquareArrowOutUpRightIcon/>
+            <Button
+            onClick={()=>{
+                setSandbox({
+                    url: sandBoxUrl,
+                    files:files,
+                    id:fragment.id
+                })
+            }}
+            className='cursor-pointer'>
+               {sandBoxUrl===sandbox?.url ? 'Currently Warching':<> Preview <SquareArrowOutUpRightIcon/></>}
             </Button>
         </div>
        }

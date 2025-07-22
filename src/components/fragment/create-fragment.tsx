@@ -48,13 +48,21 @@ const data = query_client.getQueryData<Usage|undefined>(['credits-usage']);
      }
     },
     onError:(data)=>{
-        setError(data.message)
+        setError(data.message);
+             if(data){
+                query_client.setQueryData(['credits-usage'], (oldData:Usage|undefined)=>{
+                  if(oldData) return {...oldData,token_left:oldData.token_left+2};
+                  return oldData
+                })
+              }
+            
     },
      onMutate:()=>{
        if (!data || data.token_left <= 0) return;
               if(data){
+                setFragment(null)
                 query_client.setQueryData(['credits-usage'], (oldData:Usage|undefined)=>{
-                  if(oldData) return {...oldData,token_left:oldData.token_left-1};
+                  if(oldData) return {...oldData,token_left:oldData.token_left-3};
                   return oldData
                 })
               }

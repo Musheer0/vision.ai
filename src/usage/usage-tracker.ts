@@ -12,7 +12,7 @@ export const consumeCredits = async (userId: string) => {
   return await prisma.usage.update({
     where: { user_id: userId },
     data: {
-      token_left: { decrement: 1 },
+      token_left: { decrement: 3 },
     },
   });
 };
@@ -22,7 +22,7 @@ export const RevertCredits = async(userId:string)=>{
             user_id:userId,
         },
         data:{
-        token_left: {increment:1}
+        token_left: {increment:2}
         }
     });
     return usage;

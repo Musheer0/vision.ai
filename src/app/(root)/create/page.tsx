@@ -46,7 +46,7 @@ const page = () => {
     perspective: '1000px',
     willChange: 'transform',
   }}
-  className="absolute left-1/2 top-0 blur-xl aspect-square w-[350%] -translate-x-1/2 overflow-hidden md:w-[190%] lg:w-[190%] xl:w-[190%] 2xl:mx-auto"
+  className="absolute fade-in opacity-0 left-1/2 top-0 blur-xl aspect-square w-[350%] -translate-x-1/2 overflow-hidden md:w-[190%] lg:w-[190%] xl:w-[190%] 2xl:mx-auto"
 />
 <div
   style={{
